@@ -1,5 +1,7 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+author: "Joe Zendle"
+date: "Jan, 5 2016"
 output: 
   html_document:
     keep_md: true
@@ -8,7 +10,21 @@ output:
 
 ## Loading and preprocessing the data
 
+```{r}
+print ("hello")
+unzip(zipfile = "activity.zip",overwrite = TRUE)
+csv <- read.csv("activity.csv")
 
+str(csv)
+summary(csv)
+
+
+library(dplyr, quietly = TRUE)
+
+byDate <- group_by(csv, date)
+
+sum <- summarise_each(byDate, funs(mean(., na.rm=TRUE)), -interval)
+```
 
 ## What is mean total number of steps taken per day?
 
