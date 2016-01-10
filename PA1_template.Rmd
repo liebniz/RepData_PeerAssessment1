@@ -1,10 +1,12 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
+title: 'Reproducible Research: Peer Assessment 1'
 author: "Joe Zendle"
 date: "Jan, 5 2016"
-output: 
+output:
   html_document:
-    keep_md: true
+    keep_md: yes
+  pdf_document: default
+  word_document: default
 ---
 
 
@@ -12,7 +14,7 @@ output:
 
 ```{r}
 
-library(dplyr, quietly = TRUE)
+library(dplyr, quietly = TRUE,warn.conflicts = FALSE)
 unzip(zipfile = "activity.zip",overwrite = TRUE)
 csv <- read.csv("activity.csv")
 
@@ -55,15 +57,8 @@ qplot(numSteps, data=stepsByDate, binw=1500)
 3) Calculate and report the mean and median of the total number of steps taken per day.
 
 ```{r}
-
-# since there are no zeros in the original data, not fare to count NA's as zero
-# so calculate mean with and without zeros (zeros come from sum() operation above)
-
-mean( filter(stepsByDate, numSteps > 0)$numSteps)
 mean( stepsByDate$numSteps)
 
-# and corresponding standard deviations
-sd(filter(stepsByDate, numSteps > 0)$numSteps) 
 sd(stepsByDate$numSteps) 
 
 ```
@@ -130,26 +125,71 @@ mnIntervals
 3) Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 ```{r}
-```
+newCsv <- csv # make copy
 
+nas <- is.na(newCsv$steps) # find the NAs
+
+newCsv$steps[nas] <- mnIntervals # substitute the new value
+
+sum(is.na(newCsv$steps)) # sanity check - should be zero
+
+```
 
 4) Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 ```{r}
+
+newByDate <- group_by(newCsv, dateDate) # group by date
+
+newStepsByDate <- summarise(newByDate, numSteps = sum(steps))
+
+qplot(numSteps, data=newStepsByDate, binw=1500)
+
 ```
+
+Calculate the new mean and standard deviation:
+
+```{r}
+mean( newStepsByDate$numSteps)
+
+sd(newStepsByDate$numSteps) 
+
+```
+
+As expected, the mean has increased because we have added more 'steps' to the data set as a whole, and the standard deviation goes down as we narrowed the spread by replacing what was counted as zeros with higher values.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
 ```{r}
 ```
+
 From problem statement: 
 
 1) Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
 ```{r}
+
+newCsv <- mutate(newCsv, weekday = factor(ifelse( 
+  weekdays(dateDate) == "Sunday" | weekdays(dateDate) == "Saturday", "Weekend", "Weekday")))
+
+str(newCsv$weekday) # newly created factor
 ```
 
 2) Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
 
 ```{r}
+newByInterval <- group_by(newCsv, interval, weekday) # now group by interval and new weekday factor
+
+newStepsByInterval <- summarise(newByInterval, avgSteps = mean(steps)) # this gives us 3 variables
+
+library(lattice)
+xyplot(newStepsByInterval$avgSteps~newStepsByInterval$interval|newStepsByInterval$weekday,
+   main="Steps per interval by weekday", 
+   xlab="daily interval (HHmm)",
+   ylab="steps/interval",
+   type="l",
+   lwd="3",
+   layout=c(1,2))
+
+
 ```
